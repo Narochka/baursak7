@@ -1,15 +1,14 @@
 using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
 
 public class BaursakController : MonoBehaviour
 {
-    public float jumpAmount = 0.5f;   // Сколько поднимается за клик
+    public float jumpAmount = 0.5f;   // Подъем за клик
     public float fallSpeed = 1.5f;    // Скорость падения
     public float minY = 0f;
     public float maxY = 10f;
 
     private Animator animator;
+    private bool isFalling = false;    // Чтобы отслеживать состояние падения
 
     private void Start()
     {
@@ -20,21 +19,43 @@ public class BaursakController : MonoBehaviour
     {
         Vector3 position = transform.position;
 
-        // Реакция на одиночный клик мыши или тап на экран
         if (Input.GetMouseButtonDown(0))
         {
+            // Прыжок вверх
             position.y += jumpAmount;
-            if (animator) animator.SetBool("isClimbing", true);
+            animator.ResetTrigger("fall");
+            animator.SetTrigger("climb");
+            isFalling = false;
         }
         else
         {
             // Постепенное падение
             position.y -= fallSpeed * Time.deltaTime;
-            if (animator) animator.SetBool("isClimbing", false);
+
+            if (!isFalling)
+            {
+                animator.ResetTrigger("climb");
+                animator.SetTrigger("fall");
+                isFalling = true;
+            }
         }
 
-        // Ограничим высоту
+        // Ограничение высоты
         position.y = Mathf.Clamp(position.y, minY, maxY);
         transform.position = position;
+
+        // Проверка проигрыша (упал слишком низко)
+        if (position.y <= minY)
+        {
+            animator.SetTrigger("lose");
+            enabled = false; // Останавливаем управление
+        }
+
+        // Проверка победы (достиг вершины)
+        if (position.y >= maxY)
+        {
+            animator.SetTrigger("win");
+            enabled = false; // Останавливаем управление
+        }
     }
 }
